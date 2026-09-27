@@ -1,52 +1,83 @@
 # BlossomUI
 
-A compact, UI-only Roblox Lua library reconstructed from the supplied Blossom reference video. It is designed to run as a standalone script through Roblox Lua executors, including Delta. It contains no gameplay exploit logic, remotes, targeting, automation, or game-affecting behavior.
+A source-preserving reconstruction of the compact dark **Blossom** Roblox UI library, targeted at the Delta executor. The canonical implementation remains structurally derived from the supplied original library: its window, tab, column, section, control, popup, theme, config, and notification APIs are preserved rather than replaced with a new architecture.
 
-## Delta load
+## Quick load
 
-Execute the complete script with:
-
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Faludaddd/BlossomUI/main/BlossomUI_Executor.lua"))()
-```
-
-The executor script automatically waits for the game/player, mounts the UI, and exposes:
-
-- `BlossomUI` — library table
-- `BlossomUIApp` — active UI instance
-
-Re-running the script removes the previous app and same-name GUI before mounting a replacement.
-
-## Example
-
-See [`Example.lua`](Example.lua) for a clean load/use pattern modeled conceptually after common executor UI-library examples.
+Paste this exact one-line loader into Delta:
 
 ```lua
-local app = loadstring(game:HttpGet("https://raw.githubusercontent.com/Faludaddd/BlossomUI/main/BlossomUI_Executor.lua"))()
-app:SelectPage("Settings")
-app:SetTheme("Obsidian")
-app:ShowDetachedCombat()
-app:Notify({Title = "Ready", Text = "BlossomUI is running."})
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Faludaddd/BlossomUI/main/Library_Blossom_Delta.lua"))()
 ```
 
-## API
+The canonical source is [`Library_Blossom_Delta.lua`](Library_Blossom_Delta.lua). The ready-to-run UI-only example is [`Example.lua`](Example.lua).
 
-| Call | Purpose |
-|---|---|
-| `BlossomUIApp:SelectPage(name)` | Select `Rage`, `Legit`, `Players`, `Effects`, `Movement`, `Exploits`, or `Settings`. |
-| `BlossomUIApp:ShowDetachedCombat()` | Show independently draggable Ragebot, Silent Aim, and Targeting cards. |
-| `BlossomUIApp:ShowCompactCombat()` | Return combat cards to the compact layout. |
-| `BlossomUIApp:SetTheme(name)` | Apply Blossom, Obsidian, Volt, Frostbite, Afterglow, Sakura Drift, Neon Mirage, Copper Dust, Abyss, or Porcelain. |
-| `BlossomUIApp:Notify(options)` | Show a timed notification; use `{Title = "...", Text = "...", Lifetime = 3}`. |
-| `BlossomUIApp:Toggle()` | Toggle visibility. |
-| `BlossomUIApp:Destroy()` | Disconnect inputs and remove the UI. |
+## Delta usage
 
-The library also exposes reusable control builders for custom UI extensions: `AddPage`, `AddCard`, `AddToggle`, `AddCheckbox`, `AddSlider`, `AddDropdown`, `AddColorPicker`, `AddTextbox`, and `AddButton`.
+```lua
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Faludaddd/BlossomUI/main/Library_Blossom_Delta.lua"))()
 
-## Compatibility and troubleshooting
+local Window = Library:window({
+    name = "Blossom",
+    suffix = "",
+    gameInfo = "Delta executor",
+    size = UDim2.fromOffset(480, 395),
+})
 
-The script uses parser-conservative classic Lua syntax: no type annotations, generics, union types, casts, `:Once`, `task.delay`, `table.find`, compound assignments, or newer layout-only APIs. It tries GUI parents in this order: `gethui()`, `CoreGui`, then `PlayerGui`. It tries `syn.protect_gui`, `protect_gui`, and `protectgui` independently and continues without protection if unavailable.
+local Rage = Window:tab({name = "Rage", tabs = {"Combat", "Targeting"}})
+local Column = Rage:column({size = 1})
+local Card = Column:section({name = "Ragebot", default = true, detachable = true})
+Card:toggle({name = "Enabled", flag = "enabled", type = "toggle", default = true})
+Card:slider({name = "Hitchance", flag = "hitchance", min = 0, max = 100, default = 75, suffix = "%"})
+Card:dropdown({name = "Aim Point", flag = "aim_point", items = {"Head", "Torso", "Random"}, default = "Head"})
+```
 
-If Delta shows no UI, execute the complete file directly and check the executor console for `[BlossomUI] startup failed:`. The automatic mount is wrapped in `pcall`, so runtime construction errors should be visible through `warn` or `print`. Delta builds can differ in `gethui`, CoreGui access, GUI protection, Unicode glyph rendering, and HTTP/loadstring behavior; those are executor-specific caveats, not library gameplay dependencies.
+This repository contains UI primitives and demo state only. It intentionally does **not** include gameplay exploit, targeting implementation, automation, remote invocation, or game-affecting logic.
 
-Profiles/config controls are UI-only demonstrations and do not require filesystem APIs. The library does not call `writefile`, `readfile`, `makefolder`, remotes, or game-affecting services.
+## Preserved API
+
+- `Library:window(properties)` and `Window:toggle_menu(bool)`
+- `Window:tab(properties)`, `Tab:column(properties)`, `Column:section(properties)`
+- `Section:toggle`, `slider`, `dropdown`, `colorpicker`, `textbox`, `keybind`, `button`, and `label`
+- `Section:set_detached(bool)` for independently draggable cards
+- `Library:apply_theme_preset(name)` for Blossom, Obsidian, Afterglow, Frostbite, Volt, Sakura Drift, Neon Mirage, Copper Dust, Abyss, and Porcelain
+- `Library:init_config(window)`, `Library:get_config()`, `Library:load_config(json)`, and notification helpers
+
+## What was repaired
+
+The rebuild keeps the original dark charcoal surfaces, compact rail/content proportions, Inter font path, rounded section hierarchy, control primitives, animations, popovers, and theme propagation. Concrete repairs include:
+
+- Initializes the hidden page cache before cached pages are parented.
+- Repairs explicit `false`/`0` defaults and separator/visibility handling.
+- Fixes config-name precedence and sanitizes config paths.
+- Makes main-window dragging reliable across mouse/touch release paths and clamps it to the viewport.
+- Adds detachable/draggable section cards.
+- Creates the missing settings fade target and improves popup cleanup.
+- Adds observed theme presets and `Applied "…" theme.` notifications.
+- Cleans expired notification stack entries and refreshes remaining positions.
+
+## Troubleshooting
+
+### The loader returns an HTTP or raw-file error
+
+Confirm Delta has network access and that this exact URL is used:
+
+`https://raw.githubusercontent.com/Faludaddd/BlossomUI/main/Library_Blossom_Delta.lua`
+
+If GitHub is temporarily unavailable, open the repository URL in a browser and verify that `Library_Blossom_Delta.lua` is visible on the `main` branch.
+
+### The UI does not appear
+
+The library creates its ScreenGuis under `CoreGui`, which is required by the executor context. Run the loader from Delta after joining a Roblox experience, and check `Library.diagnostics.startup` in the returned library object.
+
+### Fonts or external assets do not load
+
+The original library's font registration path uses Delta filesystem/custom-asset helpers. Allow the executor's filesystem and asset APIs, or use its common fallbacks. The UI remains source-compatible with common executor environments where those helpers are present.
+
+### A config cannot be loaded
+
+Use a config name containing letters, numbers, `_`, `-`, or `.`, and ensure the config was saved under the same Delta workspace. The settings helpers now choose the explicit config textbox name first and otherwise use the selected config list entry.
+
+## Evidence
+
+The reconstruction report and representative video-state references are included in the original working deliverables. The repository includes [`evidence/Blossom_video_reference_contact_sheet.jpg`](evidence/Blossom_video_reference_contact_sheet.jpg) plus timestamped stills used to compare combat, detached cards, dropdowns, color picker, settings, theme, utility, and movement states.
